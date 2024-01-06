@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import Optional
 
-class MovieSchema(BaseModel):
+class Movie(BaseModel):
     id: Optional[int] = None
     title: str = Field(min_length=5, max_length=15)
     overview: str = Field(min_length=5, max_length=50)
