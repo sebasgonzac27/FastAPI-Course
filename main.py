@@ -163,8 +163,9 @@ def get_movie(id: int = Path(ge=1, le=100)) -> Movie:
 
 @app.get('/movies/', tags=['Movies'], response_model=List[Movie], status_code=200)
 def get_movie_by_category(category: str = Query(min_length=3, max_length=15)) -> List[Movie]:
-    foundedMovies = [movie for movie in movies if movie['category'].lower() == category.lower()]
-    return JSONResponse(content=foundedMovies, status_code=200)
+    db = Session()
+    movies = db.query(MovieModel).filter(MovieModel.category.lower() == category.lower()).all()
+    return JSONResponse(content=jsonable_encoder(movies), status_code=200)
 
 @app.post('/movies', tags=['Movies'], response_model=dict, status_code=201)
 def create_movie(movie: Movie = Body()) -> dict:
