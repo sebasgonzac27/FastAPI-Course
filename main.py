@@ -15,16 +15,20 @@ class Movie(BaseModel):
     rating: float = Field(ge=0, le=10)
     category: str = Field(min_length=3, max_length=15)
 
-    class Config:
-        schema_extra = {
-            "example": {
-                "title": "The Shawshank Redemption",
-                "overview": "A movie about prisioners",
-                "year": 1994,
-                "rating": 9.3,
-                "category": "Drama"
-            }
-        }
+    model_config = {
+      "json_schema_extra": {
+          "examples": [
+              {   "id": 1,
+                  "title": "The Shawshank Redemption",
+                  "overview": "Two imprisoned men bond over a number of years, finding solace and eventual redemption through acts of common decency.",
+                  "year": 1994,
+                  "rating": 9.3,
+                  "category": "Drama"
+              }
+          ]
+      }
+    }
+    
 
 movies = [
   {
