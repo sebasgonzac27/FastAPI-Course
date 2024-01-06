@@ -1,11 +1,34 @@
-from fastapi import FastAPI, Body, Path, Query
+from fastapi import FastAPI, Depends, Body, Path, Query
 from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.exceptions import HTTPException
+from fastapi.security import HTTPBearer
+
 from pydantic import BaseModel, Field
 from typing import Optional, List
+
+from starlette.requests import Request
+from jwt_manager import create_token, validate_token
+
+from config.database import Session, engine, Base
+from models.movie import Movie
 
 app = FastAPI()
 app.title = "Curso de FastAPI"
 app.version = "0.0.1"
+
+Base.metadata.create_all(bind=engine)
+
+class JWTBearer(HTTPBearer):
+    async def __call__(self, request: Request):
+        auth =  await super().__call__(request)
+        data = validate_token(auth.credentials)
+        if data['email'] != "admin@gmail.com":
+            raise HTTPException(status_code=403, detail="Invalid user")
+        
+
+class User(BaseModel):
+    email: str
+    password: str
 
 class Movie(BaseModel):
     id: Optional[int] = None
@@ -117,11 +140,17 @@ movies = [
 def message():
     return HTMLResponse(content='<h1>Curso de FastAPI</h1>', status_code=200)
 
-@app.get('/movies', tags=['Movies'], response_model=List[Movie], status_code=200)
+@app.post('/login', tags=['Auth'], response_model=dict, status_code=200)
+def login(user: User = Body(...)):
+    if user.email == 'admin@gmail.com' and user.password == 'admin':
+        token = create_token(user.dict())
+        return JSONResponse(content={'message': 'Login success', 'token': token}, status_code=200)
+
+@app.get('/movies', tags=['Movies'], response_model=List[Movie], status_code=200, dependencies=[Depends(JWTBearer())] )
 def get_movies() -> List[Movie]:
     return JSONResponse(content=movies, status_code=200)
 
-@app.get('/movies/{id}', tags=['Movies'], response_model=Movie, status_code=200)
+@app.get('/movies/{id}', tags=['Movies'], response_model=Movie,   status_code=200)
 def get_movie(id: int = Path(ge=1, le=100)) -> Movie:
     for movie in movies:
         if movie['id'] == id:
