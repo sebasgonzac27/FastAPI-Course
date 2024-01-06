@@ -177,14 +177,16 @@ def create_movie(movie: Movie = Body()) -> dict:
 
 @app.put('/movies/{id}', tags=['Movies'], response_model=dict, status_code=200)
 def update_movie(id: int, movie: Movie = Body()) -> dict:
-    for movie in movies:
-        if movie['id'] == id:
-            movie['title'] = movie.title
-            movie['overview'] = movie.overview
-            movie['year'] = movie.year
-            movie['rating'] = movie.rating
-            movie['category'] = movie.category
-            return JSONResponse(content={'message': 'Movie updated'}, status_code=200)
+    db = Session()
+    foundedMovie = db.query(MovieModel).filter(MovieModel.id == id).first()
+    if foundedMovie:
+        foundedMovie.title = movie.title
+        foundedMovie.overview = movie.overview
+        foundedMovie.year = movie.year
+        foundedMovie.rating = movie.rating
+        foundedMovie.category = movie.category
+        db.commit()
+        return JSONResponse(content={'message': 'Movie updated'}, status_code=200)
     return JSONResponse(content={'error': 'Movie not found'}, status_code=404)
 
 @app.delete('/movies/{id}', tags=['Movies'], response_model=dict, status_code=200)
