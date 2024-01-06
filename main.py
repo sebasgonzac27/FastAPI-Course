@@ -1,9 +1,5 @@
-from fastapi import FastAPI, Body
-from fastapi.responses import HTMLResponse, JSONResponse
-
-from pydantic import BaseModel
-
-from jwt_manager import create_token
+from fastapi import FastAPI
+from fastapi.responses import HTMLResponse
 
 from config.database import engine, Base
 
