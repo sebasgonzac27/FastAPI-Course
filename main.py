@@ -18,14 +18,14 @@ class Movie(BaseModel):
     class Config:
         schema_extra = {
             "example": {
-                "id": 1,
-                "title": "Mi Película",
-                "overview": "Aquí va la descripción",
-                "year": 2000,
-                "rating": 9.5,
+                "title": "The Shawshank Redemption",
+                "overview": "A movie about prisioners",
+                "year": 1994,
+                "rating": 9.3,
                 "category": "Drama"
             }
         }
+
 movies = [
   {
     "id": 1,
@@ -113,28 +113,28 @@ movies = [
 def message():
     return HTMLResponse(content='<h1>Curso de FastAPI</h1>', status_code=200)
 
-@app.get('/movies', tags=['Movies'], response_model=List[Movie])
+@app.get('/movies', tags=['Movies'], response_model=List[Movie], status_code=200)
 def get_movies() -> List[Movie]:
     return JSONResponse(content=movies, status_code=200)
 
-@app.get('/movies/{id}', tags=['Movies'], response_model=Movie)
+@app.get('/movies/{id}', tags=['Movies'], response_model=Movie, status_code=200)
 def get_movie(id: int = Path(ge=1, le=100)) -> Movie:
     for movie in movies:
         if movie['id'] == id:
             return JSONResponse(content=movie, status_code=200)
     return JSONResponse(content={'error': 'Movie not found'}, status_code=404)
 
-@app.get('/movies/', tags=['Movies'], response_model=List[Movie])
+@app.get('/movies/', tags=['Movies'], response_model=List[Movie], status_code=200)
 def get_movie_by_category(category: str = Query(min_length=3, max_length=15)) -> List[Movie]:
     foundedMovies = [movie for movie in movies if movie['category'].lower() == category.lower()]
     return JSONResponse(content=foundedMovies, status_code=200)
 
-@app.post('/movies', tags=['Movies'], response_model=dict)
+@app.post('/movies', tags=['Movies'], response_model=dict, status_code=201)
 def create_movie(movie: Movie = Body()) -> dict:
     movies.append(movie)
     return JSONResponse(content={"message": "Movie created"}, status_code=201)
 
-@app.put('/movies/{id}', tags=['Movies'], response_model=dict)
+@app.put('/movies/{id}', tags=['Movies'], response_model=dict, status_code=200)
 def update_movie(id: int, movie: Movie = Body()) -> dict:
     for movie in movies:
         if movie['id'] == id:
@@ -146,7 +146,7 @@ def update_movie(id: int, movie: Movie = Body()) -> dict:
             return JSONResponse(content={'message': 'Movie updated'}, status_code=200)
     return JSONResponse(content={'error': 'Movie not found'}, status_code=404)
 
-@app.delete('/movies/{id}', tags=['Movies'], response_model=dict)
+@app.delete('/movies/{id}', tags=['Movies'], response_model=dict, status_code=200)
 def delete_movie(id: int) -> dict:
     for index, movie in enumerate(movies):
         if movie['id'] == id:
