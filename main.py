@@ -1,10 +1,31 @@
-from fastapi import FastAPI, Body
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, Body, Path, Query
+from fastapi.responses import HTMLResponse, JSONResponse
+from pydantic import BaseModel, Field
+from typing import Optional, List
 
 app = FastAPI()
 app.title = "Curso de FastAPI"
 app.version = "0.0.1"
 
+class Movie(BaseModel):
+    id: Optional[int] = None
+    title: str = Field(min_length=5, max_length=15)
+    overview: str = Field(min_length=5, max_length=50)
+    year: int = Field(ge=1900, le=2024)
+    rating: float = Field(ge=0, le=10)
+    category: str = Field(min_length=3, max_length=15)
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "id": 1,
+                "title": "Mi Película",
+                "overview": "Aquí va la descripción",
+                "year": 2000,
+                "rating": 9.5,
+                "category": "Drama"
+            }
+        }
 movies = [
   {
     "id": 1,
@@ -92,50 +113,43 @@ movies = [
 def message():
     return HTMLResponse(content='<h1>Curso de FastAPI</h1>', status_code=200)
 
-@app.get('/movies', tags=['Movies'])
-def get_movies():
-    return movies
+@app.get('/movies', tags=['Movies'], response_model=List[Movie])
+def get_movies() -> List[Movie]:
+    return JSONResponse(content=movies, status_code=200)
 
-@app.get('/movies/{id}', tags=['Movies'])
-def get_movie(id: int):
+@app.get('/movies/{id}', tags=['Movies'], response_model=Movie)
+def get_movie(id: int = Path(ge=1, le=100)) -> Movie:
     for movie in movies:
         if movie['id'] == id:
-            return movie
-    return {'error': 'Movie not found'}
+            return JSONResponse(content=movie, status_code=200)
+    return JSONResponse(content={'error': 'Movie not found'}, status_code=404)
 
-@app.get('/movies/', tags=['Movies'])
-def get_movie_by_category(category: str):
-    return [movie for movie in movies if movie['category'].lower() == category.lower()]
+@app.get('/movies/', tags=['Movies'], response_model=List[Movie])
+def get_movie_by_category(category: str = Query(min_length=3, max_length=15)) -> List[Movie]:
+    foundedMovies = [movie for movie in movies if movie['category'].lower() == category.lower()]
+    return JSONResponse(content=foundedMovies, status_code=200)
 
-@app.post('/movies', tags=['Movies'])
-def create_movie(id: int = Body(), title: str = Body(), overview: str = Body(), year: int = Body(), rating: float = Body(), category: str = Body()):
-    movie = {
-        'id': id,
-        'title': title,
-        'overview': overview,
-        'year': year,
-        'rating': rating,
-        'category': category
-    }
+@app.post('/movies', tags=['Movies'], response_model=dict)
+def create_movie(movie: Movie = Body()) -> dict:
     movies.append(movie)
-    return movie
+    return JSONResponse(content={"message": "Movie created"}, status_code=201)
 
-@app.put('/movies/{id}', tags=['Movies'])
-def update_movie(id: int, title: str = Body(), overview: str = Body(), year: int = Body(), rating: float = Body(), category: str = Body()):
+@app.put('/movies/{id}', tags=['Movies'], response_model=dict)
+def update_movie(id: int, movie: Movie = Body()) -> dict:
     for movie in movies:
         if movie['id'] == id:
-            movie['title'] = title
-            movie['overview'] = overview
-            movie['year'] = year
-            movie['rating'] = rating
-            movie['category'] = category
-            return movie
-    return {'error': 'Movie not found'}
+            movie['title'] = movie.title
+            movie['overview'] = movie.overview
+            movie['year'] = movie.year
+            movie['rating'] = movie.rating
+            movie['category'] = movie.category
+            return JSONResponse(content={'message': 'Movie updated'}, status_code=200)
+    return JSONResponse(content={'error': 'Movie not found'}, status_code=404)
 
-@app.delete('/movies/{id}', tags=['Movies'])
-def delete_movie(id: int):
+@app.delete('/movies/{id}', tags=['Movies'], response_model=dict)
+def delete_movie(id: int) -> dict:
     for index, movie in enumerate(movies):
         if movie['id'] == id:
             movies.pop(index)
-            return {'message': 'Movie deleted'}
-    return {'error': 'Movie not found'}
+            return JSONResponse(content={'message': 'Movie deleted'}, status_code=200)
+    return JSONResponse(content={'error': 'Movie not found'}, status_code=404)
