@@ -12,6 +12,8 @@ from fastapi.encoders import jsonable_encoder
 
 from middlewares.jwt_bearer import JWTBearer
 
+from services.movie import Movie as MovieService
+
 class Movie(BaseModel):
     id: Optional[int] = None
     title: str = Field(min_length=5, max_length=15)
@@ -37,16 +39,16 @@ class Movie(BaseModel):
 
 movie_router = APIRouter(prefix='/movies', tags=['Movies'])
 
-@movie_router.get('', response_model=List[Movie], status_code=200, dependencies=[Depends(JWTBearer())] )
+@movie_router.get('', response_model=List[Movie], status_code=200)
 def get_movies() -> List[Movie]:
     db = Session()
-    movies = db.query(MovieModel).all()
+    movies = MovieService(db).get_movies()
     return JSONResponse(content=jsonable_encoder(movies), status_code=200)
 
 @movie_router.get('/{id}', response_model=Movie,   status_code=200)
 def get_movie(id: int = Path(ge=1, le=100)) -> Movie:
     db = Session()
-    movie = db.query(MovieModel).filter(MovieModel.id == id).first()
+    movie = MovieService(db).get_movie(id)
     if movie:
       return JSONResponse(content=jsonable_encoder(movie), status_code=200)
     return JSONResponse(content={'error': 'Movie not found'}, status_code=404)
@@ -57,7 +59,7 @@ def get_movie_by_category(category: str = Query(min_length=3, max_length=15)) ->
     movies = db.query(MovieModel).filter(MovieModel.category.lower() == category.lower()).all()
     return JSONResponse(content=jsonable_encoder(movies), status_code=200)
 
-@movie_router.post('', response_model=dict, status_code=201)
+@movie_router.post('', response_model=dict, status_code=201, dependencies=[Depends(JWTBearer())])
 def create_movie(movie: Movie = Body()) -> dict:
     db = Session()
     new_movie = MovieModel(**movie.dict())
@@ -65,7 +67,7 @@ def create_movie(movie: Movie = Body()) -> dict:
     db.commit()
     return JSONResponse(content={"message": "Movie created"}, status_code=201)
 
-@movie_router.put('/{id}', response_model=dict, status_code=200)
+@movie_router.put('/{id}', response_model=dict, status_code=200, dependencies=[Depends(JWTBearer())])
 def update_movie(id: int, movie: Movie = Body()) -> dict:
     db = Session()
     foundedMovie = db.query(MovieModel).filter(MovieModel.id == id).first()
@@ -79,7 +81,7 @@ def update_movie(id: int, movie: Movie = Body()) -> dict:
         return JSONResponse(content={'message': 'Movie updated'}, status_code=200)
     return JSONResponse(content={'error': 'Movie not found'}, status_code=404)
 
-@movie_router.delete('/{id}', response_model=dict, status_code=200)
+@movie_router.delete('/{id}', response_model=dict, status_code=200, dependencies=[Depends(JWTBearer())])
 def delete_movie(id: int) -> dict:
     db = Session()
     foundedMovie = db.query(MovieModel).filter(MovieModel.id == id).first()
