@@ -39,31 +39,23 @@ def get_movie_by_category(category: str = Query(min_length=3, max_length=15)) ->
 @movie_router.post('', response_model=dict, status_code=201, dependencies=[Depends(JWTBearer())])
 def create_movie(movie: MovieSchema = Body()) -> dict:
     db = Session()
-    new_movie = MovieModel(**movie.dict())
-    db.add(new_movie)
-    db.commit()
+    MovieService(db).create_movie(movie)
     return JSONResponse(content={"message": "Movie created"}, status_code=201)
 
 @movie_router.put('/{id}', response_model=dict, status_code=200, dependencies=[Depends(JWTBearer())])
 def update_movie(id: int, movie: MovieSchema = Body()) -> dict:
     db = Session()
-    foundedMovie = db.query(MovieModel).filter(MovieModel.id == id).first()
+    foundedMovie = MovieService(db).get_movie(id)
     if foundedMovie:
-        foundedMovie.title = movie.title
-        foundedMovie.overview = movie.overview
-        foundedMovie.year = movie.year
-        foundedMovie.rating = movie.rating
-        foundedMovie.category = movie.category
-        db.commit()
+        MovieService(db).update_movie(id, movie)
         return JSONResponse(content={'message': 'Movie updated'}, status_code=200)
     return JSONResponse(content={'error': 'Movie not found'}, status_code=404)
 
 @movie_router.delete('/{id}', response_model=dict, status_code=200, dependencies=[Depends(JWTBearer())])
 def delete_movie(id: int) -> dict:
     db = Session()
-    foundedMovie = db.query(MovieModel).filter(MovieModel.id == id).first()
+    foundedMovie = MovieService(db).get_movie(id)
     if foundedMovie:
-        db.delete(foundedMovie)
-        db.commit()
+        MovieService(db).delete_movie(id)
         return JSONResponse(content={'message': 'Movie deleted'}, status_code=200)
     return JSONResponse(content={'error': 'Movie not found'}, status_code=404)
