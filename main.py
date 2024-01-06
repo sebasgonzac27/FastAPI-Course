@@ -119,3 +119,23 @@ def create_movie(id: int = Body(), title: str = Body(), overview: str = Body(), 
     }
     movies.append(movie)
     return movie
+
+@app.put('/movies/{id}', tags=['Movies'])
+def update_movie(id: int, title: str = Body(), overview: str = Body(), year: int = Body(), rating: float = Body(), category: str = Body()):
+    for movie in movies:
+        if movie['id'] == id:
+            movie['title'] = title
+            movie['overview'] = overview
+            movie['year'] = year
+            movie['rating'] = rating
+            movie['category'] = category
+            return movie
+    return {'error': 'Movie not found'}
+
+@app.delete('/movies/{id}', tags=['Movies'])
+def delete_movie(id: int):
+    for index, movie in enumerate(movies):
+        if movie['id'] == id:
+            movies.pop(index)
+            return {'message': 'Movie deleted'}
+    return {'error': 'Movie not found'}
